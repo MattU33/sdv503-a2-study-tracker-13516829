@@ -1,0 +1,154 @@
+// CODE BLOCK 1: STATE STORAGE & USER INPUT
+
+// Load a simple line-by-line reading tool to pause execution for user inputs
+const readlineSync = require('readline-sync');
+
+// In-memory array acting as our database to hold session objects
+const studySessions = [];
+
+
+// ==========================================
+// CODE BLOCK 2: INPUT VALIDATION FUNCTIONS
+
+/**
+ * Checks if the study topic contains any text.
+ * Intended to block empty entries or strings that only have blank spaces.
+ */
+function isValidTopic(topic) {
+    if (topic === undefined || topic === null) {
+        return false;
+    }
+    const cleanedTopic = topic.trim();
+    return cleanedTopic.length > 0;
+}
+
+/**
+ * Checks if the study duration is a valid positive integer.
+ * Intended to filter out words, decimal points, zero, and negative values.
+ */
+function isValidMinutes(minutesStr) {
+    if (minutesStr === undefined || minutesStr === null) {
+        return false;
+    }
+    
+    const cleanedStr = minutesStr.trim();
+    if (cleanedStr === '') {
+        return false;
+    }
+
+    const parsedNumber = Number(cleanedStr);
+    
+    // Evaluate the input string step-by-step using standard math rules
+    const isANumber = !isNaN(parsedNumber);
+    const isInteger = Number.isInteger(parsedNumber);
+    const isPositive = parsedNumber > 0;
+
+    return isANumber && isInteger && isPositive;
+}
+
+
+// ==========================================
+// CODE BLOCK 3: TOTALS CALCULATION
+
+/**
+ * Steps through the array item by item to calculate the total sum.
+ * Intended to aggregate separate session counts into a single final value.
+ */
+function calculateTotalMinutes() {
+    let runningTotal = 0;
+    
+    for (let i = 0; i < studySessions.length; i++) {
+        runningTotal = runningTotal + studySessions[i].minutes;
+    }
+    
+    return runningTotal;
+}
+
+
+// ==========================================
+// CODE BLOCK 4: LIST OUTPUT DISPLAY
+
+/**
+ * Prints out all logged database items and their combined tracked sum total.
+ * Intended to provide user visibility or handle empty log alerts gracefully.
+ */
+function displaySessionsList() {
+    console.log('\n======================================');
+    console.log('       HISTORICAL STUDY SESSIONS      ');
+    console.log('======================================');
+
+    if (studySessions.length === 0) {
+        console.log('No study sessions recorded yet.');
+    } else {
+        // Output each saved session record onto its own clear row line
+        for (let i = 0; i < studySessions.length; i++) {
+            const currentSession = studySessions[i];
+            console.log(` [${i + 1}] Topic: ${currentSession.topic} | Duration: ${currentSession.minutes} mins`);
+        }
+        
+        const totalSum = calculateTotalMinutes();
+        console.log('--------------------------------------');
+        console.log(` TOTAL TIME ELAPSED: ${totalSum} minutes`);
+    }
+    console.log('======================================\n');
+}
+
+
+// ==========================================
+// CODE BLOCK 5: INPUT HANDLING CONTROL LOOP
+
+/**
+ * Controls the running program choices and intercepts bad input entries.
+ * Intended to run forever until the user chooses to close down the application.
+ */
+function startTrackerApp() {
+    let appIsRunning = true;
+
+    while (appIsRunning) {
+        console.log('--- STUDY TRACKER SYSTEM ---');
+        console.log('1. Log a New Session');
+        console.log('2. List All Recorded Sessions');
+        console.log('3. Close Application');
+        
+        const selection = readlineSync.question('Select an option (1-3): ');
+        const cleanSelection = selection.trim();
+
+        if (cleanSelection === '1') {
+            const topicInput = readlineSync.question('Enter study topic name: ');
+            
+            // Immediately stop processing if the topic rule fails
+            if (!isValidTopic(topicInput)) {
+                console.log('\nError: Topic field cannot be empty or whitespace.\n');
+                continue; 
+            }
+
+            const minutesInput = readlineSync.question('Enter study duration (whole minutes): ');
+
+            // Immediately stop processing if the minutes rule fails
+            if (!isValidMinutes(minutesInput)) {
+                console.log('\nError: Minutes must be a whole integer greater than zero.\n');
+                continue; 
+            }
+
+            // Convert and save clean data safely once all tests pass
+            const validatedMinutes = parseInt(minutesInput, 10);
+            const cleanedTopic = topicInput.trim();
+
+            studySessions.push({
+                topic: cleanedTopic,
+                minutes: validatedMinutes
+            });
+
+            console.log(`\nSuccess: Added session for "${cleanedTopic}" (${validatedMinutes} mins)\n`);
+
+        } else if (cleanSelection === '2') {
+            displaySessionsList();
+        } else if (cleanSelection === '3') {
+            console.log('\nExiting Study Tracker. Keep up the consistent work!');
+            appIsRunning = false; 
+        } else {
+            console.log('\nError: Invalid option. Please select 1, 2, or 3.\n');
+        }
+    }
+}
+startTrackerApp();

@@ -1,0 +1,149 @@
+// src/tracker.js
+// Import a synchronous text reader tool to keep the control loop linear and simple
+const readlineSync = require('readline-sync');
+
+// Simple array acting as our database to hold session objects
+const studySessions = [];
+
+/**
+ * Validates the study topic text input.
+ * Rejects empty entries or strings that only contain blank spaces.
+ */
+function isValidTopic(topic) {
+    if (topic === undefined || topic === null) {
+        return false;
+    }
+    const cleanedTopic = topic.trim();
+    return cleanedTopic.length > 0;
+}
+
+/**
+ * Validates the study duration minutes.
+ * Rejects words, decimals, or numbers less than or equal to zero.
+ */
+function isValidMinutes(minutesStr) {
+    if (minutesStr === undefined || minutesStr === null) {
+        return false;
+    }
+    
+    const cleanedStr = minutesStr.trim();
+    if (cleanedStr === '') {
+        return false;
+    }
+
+    const parsedNumber = Number(cleanedStr);
+    
+    // Check line-by-line using basic math rules
+    const isANumber = !isNaN(parsedNumber);
+    const isInteger = Number.isInteger(parsedNumber);
+    const isPositive = parsedNumber > 0;
+
+    return isANumber && isInteger && isPositive;
+}
+
+/**
+ * Steps through the historical list array item by item to calculate the sum.
+ */
+function calculateTotalMinutes() {
+    let runningTotal = 0;
+    
+    for (let i = 0; i < studySessions.length; i++) {
+        runningTotal = runningTotal + studySessions[i].minutes;
+    }
+    
+    return runningTotal;
+}
+
+/**
+ * Iterates through the records array and prints a clean readout summary list.
+ */
+function displaySessionsList() {
+    console.log('\n======================================');
+    console.log('       HISTORICAL STUDY SESSIONS      ');
+    console.log('======================================');
+
+    if (studySessions.length === 0) {
+        console.log('No study sessions recorded yet.');
+    } else {
+        // Simple for-loop to display saved data
+        for (let i = 0; i < studySessions.length; i++) {
+            const currentSession = studySessions[i];
+            console.log(` [${i + 1}] Topic: ${currentSession.topic} | Duration: ${currentSession.minutes} mins`);
+        }
+        
+        const totalSum = calculateTotalMinutes();
+        console.log('--------------------------------------');
+        console.log(` TOTAL TIME ELAPSED: ${totalSum} minutes`);
+    }
+    console.log('======================================\n');
+}
+
+/**
+ * Main application engine loop using a straightforward while-loop pattern.
+ */
+function startTrackerApp() {
+    let appIsRunning = true;
+
+    while (appIsRunning) {
+        console.log('--- STUDY TRACKER SYSTEM ---');
+        console.log('1. Log a New Session');
+        console.log('2. List All Recorded Sessions');
+        console.log('3. Close Application');
+        
+        const selection = readlineSync.question('Select an option (1-3): ');
+        const cleanSelection = selection.trim();
+
+        if (cleanSelection === '1') {
+            const topicInput = readlineSync.question('Enter study topic name: ');
+            
+            if (!isValidTopic(topicInput)) {
+                console.log('\n❌ Input Error: Topic field cannot be empty or whitespace.\n');
+                continue; // Redirects processing back to the menu start
+            }
+
+            const minutesInput = readlineSync.question('Enter study duration (whole minutes): ');
+
+            if (!isValidMinutes(minutesInput)) {
+                console.log('\n❌ Input Error: Minutes must be a whole integer greater than zero.\n');
+                continue; // Redirects processing back to the menu start
+            }
+
+            // Once validation rules pass, add the new object data to our array
+            const validatedMinutes = parseInt(minutesInput, 10);
+            const cleanedTopic = topicInput.trim();
+
+            studySessions.push({
+                topic: cleanedTopic,
+                minutes: validatedMinutes
+            });
+
+            console.log(`\n✅ Session logged: "${cleanedTopic}" (${validatedMinutes} mins)\n`);
+
+        } else if (cleanSelection === '2') {
+            displaySessionsList();
+        } else if (cleanSelection === '3') {
+            console.log('\nExiting Study Tracker. Keep up the consistent work!');
+            appIsRunning = false; // Turns off the while loop naturally
+        } else {
+            console.log('\n❌ Navigation Error: Please select option 1, 2, or 3.\n');
+        }
+    }
+}
+
+// Export functions clearly for testing or indexing execution paths
+module.exports = {
+    isValidTopic,
+    isValidMinutes,
+    calculateTotalMinutes,
+    startTrackerApp
+};
+
+// src/index.js
+// Bootstraps the application via a clean file link entry path
+const tracker = require('./tracker.js');
+
+console.log('=============================================');
+console.log('  Initializing SDV503 Study Tracker Engine   ');
+console.log('=============================================');
+
+tracker.startTrackerApp();
